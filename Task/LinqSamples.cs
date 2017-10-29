@@ -132,6 +132,21 @@ namespace SampleQueries
             }
         }
 
+        [Category("Restriction Operators")]
+        [Title("Where - Task 2 (With group by and single query)")]
+        [Description("This sample return return all clients with sum of orders cost higher than some value")]
+
+        public void Linq05()
+        {
+            var customers = dataSource.Customers.GroupBy(n => new { n.City, n.Country });
+            foreach (var customer in customers)
+            {
+                ObjectDumper.Write("--------------");
+                ObjectDumper.Write($"For Customers in  {customer.Key}");
+                ObjectDumper.Write(dataSource.Suppliers.Where(n => n.City == customer.Key.City && n.Country == customer.Key.Country));
+            }
+        }
+
         #endregion
 
         #region Task3
@@ -174,6 +189,22 @@ namespace SampleQueries
             }
         }
 
+        [Category("Restriction Operators")]
+        [Title("Where - Task 4 (Single query)")]
+        [Description("This sample return return all clients with where start ordering date")]
+
+        public void Linq07()
+        {
+            var customers = dataSource.Customers.Select(q => new { q.CompanyName, q.Orders.OrderBy(n => n.OrderDate).FirstOrDefault()?.OrderDate });
+            foreach (var customer in customers)
+            {
+                if (customer.OrderDate != null)
+                {
+                    ObjectDumper.Write($"Customer {customer.CompanyName} start ordering {customer.OrderDate}");
+                }
+            }
+        }
+
         #endregion
 
         #region Task5
@@ -206,6 +237,20 @@ namespace SampleQueries
 
         }
 
+        [Category("Restriction Operators")]
+        [Title("Where - Task 5 (Single quuery)")]
+        [Description("This sample return return all clients with where start ordering date with sorting")]
+
+        public void Linq08()
+        {
+            var customers = dataSource.Customers.Select(n => new { Customer = n, StartDate = n.Orders.OrderBy(q => q.OrderDate).FirstOrDefault()?.OrderDate });
+            ObjectDumper.Write("Ordered by date : ");
+            foreach (var customer in customers.OrderBy(n => n.StartDate).ThenBy(n => n.Customer.Orders.Select(q => q.Total).Sum()).ThenBy(n => n.Customer.CompanyName))
+            {
+                ObjectDumper.Write($"Customer {customer.Customer.CompanyName} start ordering {customer.StartDate}");
+            }
+        }
+
         #endregion
 
         #region Task6
@@ -217,6 +262,19 @@ namespace SampleQueries
         public void Linq9()
         {
             var customers = dataSource.Customers.Where(n => !IsCodeValid(n.PostalCode) || !IsCodeValid(n.Phone) || !IsCodeValid(n.Region));
+            foreach (var p in customers)
+            {
+                ObjectDumper.Write(p);
+            }
+        }
+
+        [Category("Restriction Operators")]
+        [Title("Where - Task 6 (Other conditions)")]
+        [Description("This sample return return all clients without normal codes")]
+
+        public void Linq09()
+        {
+            var customers = dataSource.Customers.Where(n => (n.PostalCode != null && !n.PostalCode.All(char.IsDigit)) || string.IsNullOrEmpty(n.Phone) || !IsCodeValid(n.Region));
             foreach (var p in customers)
             {
                 ObjectDumper.Write(p);
@@ -250,6 +308,19 @@ namespace SampleQueries
                         ObjectDumper.Write($"--------{product.ProductName}");
                     }
                 }
+            }
+        }
+
+        [Category("Restriction Operators")]
+        [Title("Where - Task 7 (Single query)")]
+        [Description("Grouping products")]
+
+        public void Linq010()
+        {
+            var products = dataSource.Products.GroupBy(n => n.Category).Select(n => n.GroupBy(q => q.UnitsInStock).Select(w => w.OrderBy(e => e.UnitPrice)).SelectMany(t => t)).SelectMany(r => r);
+            foreach (var product in products)
+            {
+                ObjectDumper.Write($"{product.ProductName}");
             }
         }
 
@@ -315,6 +386,25 @@ namespace SampleQueries
                 var allOrders = customerGroup.SelectMany(n => n.Orders).Select(n => n.Total);
                 var amountOfOrders = allOrders.Count() / customerGroup.Count();
                 ObjectDumper.Write($"Average order price: {allOrders.Average()}; Average amount of orders on customer: {amountOfOrders}");
+            }
+        }
+
+        [Category("Restriction Operators")]
+        [Title("Where - Task 9 (Single query)")]
+        [Description("Information about cities (Single query)")]
+
+        public void Linq012()
+        {
+            var customersByCities = dataSource.Customers.GroupBy(n => new { n.City, n.Country }).Select(n => new
+            {
+                Place = n.Key,
+                Price = n.SelectMany(e => e.Orders).Select(e => e.Total).Average(),
+                Amount = n.SelectMany(e => e.Orders).Select(e => e.Total).Count() / n.Count()
+            });
+            foreach (var customerGroup in customersByCities)
+            {
+                ObjectDumper.Write(customerGroup.Place);
+                ObjectDumper.Write($"Average order price: {customerGroup.Price}; Average amount of orders on customer: {customerGroup.Amount}");
             }
         }
 
